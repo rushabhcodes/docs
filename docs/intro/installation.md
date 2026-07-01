@@ -51,6 +51,7 @@ CLI for developing tscircuit packages
 #   build [options] [file]       Run tscircuit eval and output circuit json
 #   transpile [file]             Transpile TypeScript/TSX to JavaScript
 #   add <packageSpec>            Add a tscircuit component package
+#   agent [args...]              Install/update and run tsci-agent
 #   remove <component>           Remove a tscircuit component package
 #   snapshot [options] [path]    Generate schematic/PCB snapshots
 #   setup                        Setup utilities like GitHub Actions
