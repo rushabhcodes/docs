@@ -1,0 +1,55 @@
+---
+title: <assembly.screen />
+description: Place a display model relative to a PCB connector or named assembly.
+---
+
+import CircuitPreview from "@site/src/components/CircuitPreview"
+import preview1 from "@site/src/data/assembly-previews/assembly-screen-1.json"
+
+`assembly.screen` places a display at a connector or another assembly. `connectsTo` controls its position and orientation; it does not create electrical connections.
+
+<CircuitPreview
+  wrapCode
+  circuitJson={preview1}
+  defaultView="3d"
+  hideSchematicTab
+  browser3dView={false}
+  code={`import { assembly } from "@tscircuit/core"
+
+export default () => (
+  <assembly.device name="product">
+    <board
+      name="B1"
+      width="44mm"
+      height="36mm"
+      thickness="1.6mm"
+      routingDisabled
+    >
+      <connector
+        name="J1"
+        pcbY={-13}
+        pinCount={30}
+        footprint="fpc30_p0.5mm"
+      />
+    </board>
+    <assembly.screen
+      name="SCREEN"
+      connectsTo=".B1 .J1"
+      model="flexscreen_w16_h10_flex5_sitsflat"
+    />
+  </assembly.device>
+)`}
+/>
+
+| Property | Description |
+|----------|-------------|
+| `name` | Required screen name. |
+| `connectsTo` | Selector for a PCB component, screen, or named assembly. |
+| `model` | Modelprinter string or HTTP(S) model URL. |
+| `modelUrl` | Imported display model URL. |
+| `cadModel` | Modelprinter string. |
+| `width`, `height` | Required together when no model is supplied. |
+
+Choose one of `model`, `modelUrl`, or `cadModel`. Dimensions do not resize an explicit model.
+
+For your own display file, place its origin at the connector attachment point. The screen follows the connector's placement, including the board's bottom layer.

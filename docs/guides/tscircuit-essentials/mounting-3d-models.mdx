@@ -1,0 +1,68 @@
+---
+title: Mounting 3D models to a board
+description: Import screws and other mechanical models and align them with PCB mounting holes.
+---
+
+import CircuitPreview from "@site/src/components/CircuitPreview"
+import preview1 from "@site/src/data/assembly-previews/mounting-3d-models-1.json"
+
+To show a screw mounted in a board, align its model with a mounting hole and place the underside of its head on the board surface.
+
+This example uses a GLB model in millimetres, with its origin under the screw head and its shaft pointing down (−Z). Replace the URL with your own model, using the same origin or adjusting its [CAD options](../../elements/cadmodel.mdx).
+
+<CircuitPreview
+  wrapCode
+  circuitJson={preview1}
+  defaultView="3d"
+  hideSchematicTab
+  browser3dView={false}
+  code={`import { assembly } from "@tscircuit/core"
+
+const models =
+  "https://docs.tscircuit.com/models/assembly"
+
+const boardThickness = 1.6
+const screwModelUrl = models + "/screw.glb"
+const mounts = [
+  { name: "left", x: -15, y: 0 },
+  { name: "right", x: 15, y: 0 },
+]
+
+export default () => (
+  <assembly.device name="mounted-board">
+    <board
+      name="B1"
+      width="40mm"
+      height="30mm"
+      thickness={boardThickness}
+    >
+      {mounts.map(({ name, x, y }) => (
+        <hole
+          key={name}
+          diameter="3.2mm"
+          pcbX={x}
+          pcbY={y}
+        />
+      ))}
+    </board>
+    <assembly.subassembly name="hardware">
+      {mounts.map(({ name, x, y }) => (
+        <cadmodel
+          key={name}
+          modelUrl={screwModelUrl}
+          modelUnitToMmScale={1}
+          pcbX={x}
+          pcbY={y}
+          pcbZ={boardThickness / 2}
+        />
+      ))}
+    </assembly.subassembly>
+  </assembly.device>
+)`}
+/>
+
+The shared `mounts` array keeps each screw centered on its hole. The board is centered at Z = 0, so `pcbZ={boardThickness / 2}` seats each head on its top surface.
+
+The model provides the 3D screw; `<hole>` creates the actual board cutout. Choose the hole diameter to match your hardware.
+
+Use [`assembly.subassembly`](../../elements/assembly-subassembly.mdx) for other mechanical parts, or [`assembly.screen`](../../elements/assembly-screen.mdx) for a display attached to a connector.

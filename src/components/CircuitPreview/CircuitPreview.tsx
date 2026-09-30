@@ -14,6 +14,7 @@ import {
 import CodeBlock from "@theme/CodeBlock"
 import { useWindowSize } from "@docusaurus/theme-common"
 import TscircuitIframe from "../TscircuitIframe"
+import styles from "./styles.module.css"
 
 type CircuitPreviewView =
   | "code"
@@ -127,6 +128,7 @@ const getPreferredFsMapSource = (
 
 export default function CircuitPreview({
   code,
+  circuitJson,
   showTabs = true,
   defaultView = "pcb",
   splitView = true,
@@ -149,8 +151,11 @@ export default function CircuitPreview({
   verticalStack = false,
   showCourtyards = false,
   showDebugObjects = false,
+  wrapCode = false,
 }: {
   code?: string
+  /** Precompiled preview data for APIs newer than the hosted evaluator. */
+  circuitJson?: Record<string, unknown>[]
   showTabs?: boolean
   defaultView?: CircuitPreviewView
   splitView?: boolean
@@ -173,6 +178,7 @@ export default function CircuitPreview({
   verticalStack?: boolean
   showCourtyards?: boolean
   showDebugObjects?: boolean
+  wrapCode?: boolean
 }) {
   const { isDarkTheme } = useColorMode()
   const windowSize = useWindowSize()
@@ -235,7 +241,17 @@ export default function CircuitPreview({
       Object.values(normalizedFsMap ?? {})[0] ||
       normalizedCode
 
-  const addMainComponentPath = (url: string) => {
+  const configurePreviewUrl = (url: string) => {
+    if (circuitJson) {
+      const previewUrl = new URL(url)
+      previewUrl.searchParams.delete("code")
+      previewUrl.searchParams.delete("fs_map")
+      previewUrl.searchParams.set(
+        "circuit_json",
+        getCompressedBase64SnippetString(JSON.stringify(circuitJson)),
+      )
+      return previewUrl.toString()
+    }
     if (!mainComponentPath || typeof fsMapOrCode === "string") return url
 
     const separator = url.includes("?") ? "&" : "?"
@@ -245,7 +261,7 @@ export default function CircuitPreview({
   }
 
   const pcbUrl = useMemo(() => {
-    const basePcbUrl = addMainComponentPath(createSvgUrl(fsMapOrCode, "pcb"))
+    const basePcbUrl = configurePreviewUrl(createSvgUrl(fsMapOrCode, "pcb"))
     const flags: string[] = []
 
     if (showCourtyards) flags.push("show_courtyards=true")
@@ -254,9 +270,15 @@ export default function CircuitPreview({
 
     const separator = basePcbUrl.includes("?") ? "&" : "?"
     return `${basePcbUrl}${separator}${flags.join("&")}`
-  }, [fsMapOrCode, mainComponentPath, showCourtyards, showDebugObjects])
+  }, [
+    fsMapOrCode,
+    mainComponentPath,
+    showCourtyards,
+    showDebugObjects,
+    circuitJson,
+  ])
   const schUrl = useMemo(() => {
-    const baseUrl = addMainComponentPath(
+    const baseUrl = configurePreviewUrl(
       createSvgUrl(
         fsMapOrCode,
         showSimulationGraph ? "schsim" : "schematic",
@@ -277,16 +299,22 @@ export default function CircuitPreview({
     )
     return url.toString()
   }, [
+    circuitJson,
     fsMapOrCode,
     mainComponentPath,
     selectedSimulationExperimentName,
     showSimulationGraph,
   ])
   const pinoutUrl = useMemo(
-    () => addMainComponentPath(createSvgUrl(fsMapOrCode, "pinout")),
-    [fsMapOrCode, mainComponentPath],
+    () => configurePreviewUrl(createSvgUrl(fsMapOrCode, "pinout")),
+    [fsMapOrCode, mainComponentPath, circuitJson],
   )
   const threeDUrl = useMemo(() => {
+    if (circuitJson) {
+      return configurePreviewUrl(
+        "https://svg.tscircuit.com/?svg_type=3d&format=png&png_width=800&png_height=600&show_infinite_grid=true&background_color=%23ffffff",
+      )
+    }
     if (browser3dView && typeof fsMapOrCode === "string") {
       return `${createPngUrl(fsMapOrCode, "3d")}&background_color=%23ffffff`
     }
@@ -330,6 +358,7 @@ export default function CircuitPreview({
     )
     return `https://svg.tscircuit.com/?svg_type=3d&format=png&png_width=800&png_height=600&show_infinite_grid=true&background_color=%23ffffff&code=${encodedCode}`
   }, [
+    circuitJson,
     normalizedCode,
     normalizedFsMap,
     fsMapOrCode,
@@ -366,7 +395,9 @@ export default function CircuitPreview({
           }`,
         )}
       >
-        <div className={tw("relative w-full min-h-[320px]")}>
+        <div
+          className={`${tw("relative w-full min-h-[320px]")} ${wrapCode ? styles.wrapCode : ""}`}
+        >
           <CodeBlock
             className={tw("w-full rounded-none shadow-none p-0 m-0 min-w-0")}
             language="tsx"
